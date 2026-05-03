@@ -1,0 +1,302 @@
+    Yo lo metería a la plataforma SAFI como un módulo completo de “Operaciones Híbridas”, con una máquina de estados única (autoritaria) que corre en el controlador/PLC/MCU, y tu interfaz solo hace tres cosas: supervisar, mandar comandos de alto nivel y registrar todo.
+
+    La idea es que el mismo “estilo SAFI” que ya tienes (telemetría + dashboards + DB + WebSockets) se extienda a:
+
+    Fill (llenado)
+
+    Static test (hotfire)
+
+    Flight ops (vuelo híbrido)
+
+    sin mezclar lógica crítica en el frontend.
+
+1) Diseño de arquitectura: “Controller manda, UI supervisa”
+Capas (como lo haría para SAFI)
+
+A) Controlador de campo (autoridad)
+
+    PLC / STM32 / ESP32 industrializado
+
+    Ejecuta la máquina de estados
+
+    Lee sensores críticos
+
+    Aplica interlocks y abort automáticos
+
+    Acciona válvulas/ignición
+
+B) Backend SAFI (orquestación + registro)
+
+    WebSocket gateway (realtime)
+
+    API REST para historial/runs
+
+    Persistencia en Postgres
+
+    Control de usuarios/roles + auditoría
+
+C) UI SAFI (tu plataforma)
+
+    Panel de estados + alarmas
+
+    Controles de alto nivel (ARM, START FILL, ABORT)
+
+    Gráficas en vivo
+
+    Checklists y procedimientos
+
+    📌 Regla: un botón en la UI nunca “abre una válvula” directamente. Solo envía un comando tipo “START_FILL”, y el controlador decide qué salidas activa y cuándo.
+
+2) Unificar todo con un “Run” y “Mode”
+
+    Tu plataforma debe tratar cada evento como un RUN con metadatos:
+
+    RUN_TYPE: COLD_FLOW, FILL_ONLY, HOTFIRE, FLIGHT
+
+    MODE: SIM, GROUND, FLIGHT
+
+    CONFIG_ID: versión de motor/grano/tobera/inyector/valvulería
+
+    OPERATOR, SUPERVISOR
+
+    TIMESTAMP_START/END
+
+    RESULT: OK / ABORT / FAULT
+
+    Esto te permite:
+
+    reproducibilidad
+
+    reportes automáticos
+
+    comparar simulación vs prueba vs vuelo
+
+3) Máquina de estados: cómo se ve en la UI
+Estados típicos (ejemplo robusto)
+
+    SAFE
+
+    PRECHECK
+
+    PURGE
+
+    FILL
+
+    TOP_OFF / STABILIZE
+
+    HOLD
+
+    ARMED
+
+    IGNITION
+
+    FIRING
+
+    SHUTDOWN
+
+    DEPRESSURIZE
+
+    POSTCHECK
+
+    ABORT
+
+    FAULT_LOCKOUT
+
+    Lo que la UI debe mostrar SIEMPRE
+
+    Estado actual + tiempo en estado
+
+    Próximo estado esperado
+
+    “Razón” (por qué no avanza: interlock X no cumple)
+
+    Señales de seguridad (E-stop, arming key, comms)
+
+    Permisos (quién puede hacer qué)
+
+4) UI/UX: tres pantallas grandes (y una de “post”)
+A) Hybrid Fill Console
+
+    Pensada para llenar sin fuego.
+
+    Diagrama tipo P&ID simplificado (tanque → líneas → QD → motor)
+
+    “Valve tiles” (Fill / Purge / Vent / Main)
+
+    estado: OPEN/CLOSED/UNKNOWN
+
+    comando permitido: sí/no (interlocks)
+
+    Sensores: Ptank, Pline, Pc (si aplica), temperatura
+
+    Acciones: START_PURGE, START_FILL, HOLD, DEPRESSURIZE, ABORT
+
+    Checklist interactivo (confirmaciones humanas)
+
+    Lo más importante: un panel de “Interlocks” que diga:
+
+    ✅ presión dentro de rango
+
+    ❌ purge no confirmado
+
+    ❌ comunicación secundaria caída
+    etc.
+
+B) Static Test Console (Hotfire)
+
+    Parecido al de fill, pero enfocado en firing:
+
+    Timeline de la secuencia (countdown)
+
+    Gráficas en vivo:
+
+    Thrust
+
+    Pc
+
+    Ptank/Pline
+
+    masa oxidante
+
+    Indicador grande de estado: ARMED / FIRING / ABORT
+
+    “Commit points” (puntos donde el operador confirma)
+
+    Auto-capture de eventos:
+
+    T-10, IGNITION, LIFTOFF? (no), MECO (en hotfire no), VALVE_CLOSE
+
+Extra pro: “Replay” post-test (cursor sobre timeline).
+
+C) Flight Ops (Vuelo)
+
+    Aquí el híbrido se integra con lo que ya tienes:
+
+    Telemetría normal (alt, vel, attitude, GPS)
+
+    Eventos: ignition, burnout/MECO, apogeo, despliegues
+
+    Estado de propulsión (si tienen sensor):
+
+    Ptank, Pc (si transmiten), valve status
+
+    Health:
+
+    batería, RSSI, link status
+
+    “Flight rules” y aborts (si aplica) — normalmente en vuelo no quieres “jugar” con válvulas, pero sí registrar y detectar fallos.
+
+D) Run Review (Post-run / Post-flight)
+
+    Después de cualquier run:
+
+    Resumen automático
+
+    Curvas clave
+
+    Tabla de eventos con timestamps
+
+    Export a CSV/JSON + PDF report
+
+    Comparación contra simulación (RocketPy + Hybrid Core):
+
+    error en impulso total
+
+    error en Pc pico
+
+    divergencias por tramos
+
+    Esto convierte SAFI en ingeniería reproducible, no “a ver qué pasa”.
+
+5) Backend/telemetría: un esquema simple que escala
+WebSocket topics (ejemplo)
+
+    hybrid/state → estado actual, timers, interlocks, fault codes
+
+    hybrid/sensors → presiones, thrust, masa, temps
+
+    hybrid/actuators → válvulas (feedback), igniter, relays
+
+    hybrid/events → eventos discretos con timestamp
+
+    hybrid/commands/ack → confirmación/rechazo con motivo
+
+    Comandos de alto nivel (y auditables)
+
+    SET_MODE(GROUND|FLIGHT|SIM)
+
+    START_SEQUENCE(FILL|HOTFIRE)
+
+    HOLD
+
+    RESUME
+
+    ABORT
+
+    RESET_FAULT (solo rol supervisor)
+
+    ARM / DISARM
+
+    Cada comando se guarda con:
+
+    user_id, ip/device, timestamp, resultado, razón de rechazo si aplica.
+
+    6) Seguridad y permisos dentro de la plataforma
+
+    Tu plataforma debe tener roles, porque híbridos = alto riesgo:
+
+    Viewer: solo ve
+
+    Operator: puede iniciar secuencias no armadas (purge/fill)
+
+    Test Conductor: puede ARM y disparar secuencia
+
+    Safety Officer: puede ABORT siempre
+
+    Admin: configura límites y hardware mapping
+
+    Y además:
+
+    “Two-person rule” para ARM/IGNITE (opcional pero muy pro): dos usuarios aprueban.
+
+7) Cómo lo conectas con RocketPy y el “Hybrid Core”
+
+    En el Run Review:
+
+    Si el run fue hotfire, guardas thrust curve medida.
+
+    Esa curva se vuelve:
+
+    input directo a RocketPy (como motor de empuje tabulado)
+
+    dataset para calibrar tu Hybrid Core (a, n, ηc, pérdidas)
+
+    En la UI:
+
+    Un botón: “Generate RocketPy Motor File”
+
+    Otro: “Calibrate Hybrid Core” (lanza job en backend)
+
+8) Qué construir primero (prioridad para que funcione)
+
+    State machine en controlador + mensajes WS estables
+
+    Hybrid Fill Console (porque permite cold-flow y validar todo sin fuego)
+
+    Logging/Run Review mínimo
+
+    Static Test Console
+
+    Integración con simulación
+
+    Si quieres, lo siguiente que te puedo entregar (en un solo paquete) es:
+
+    Un diagrama de estados concreto (SAFE→…→ABORT) con interlocks
+
+    Un diseño de BD para runs, events, samples, commands
+
+    Un contrato de mensajes WebSocket (JSON schemas)
+
+    Un layout de UI (componentes) para tu stack React/Vite
+
+    Y lo hago asumiendo el patrón que ya usas en SAFI (Node/Express + WS + Postgres).

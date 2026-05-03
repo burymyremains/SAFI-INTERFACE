@@ -1,0 +1,78 @@
+//CON TEXTURAS//
+
+const RocketModel = () => {
+  const mountRef = useRef(null);
+  const modelRef = useRef();
+  const timeRef = useRef(0);
+
+  useEffect(() => {
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000); // FOV ajustado a 60
+    const renderer = new THREE.WebGLRenderer({ alpha: true });
+
+    renderer.setSize(300, 455); // Tamaño del canvas
+    mountRef.current.appendChild(renderer.domElement);
+
+    const loader = new GLTFLoader();
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath('https://unpkg.com/three@0.174.0/examples/jsm/libs/draco/'); // Ajustado a v174
+    loader.setDRACOLoader(dracoLoader);
+
+    loader.load(
+      'src/assets/ensamblaje1/ensamblaje1.gltf', // Ruta del modelo
+      (gltf) => {
+        modelRef.current = gltf.scene;
+        scene.add(modelRef.current);
+
+        // Ajustar escala para que encaje en el canvas (altura ~0.314 m)
+        modelRef.current.scale.set(7, 7, 7); // Escala original
+
+        // Centrar el modelo basado en las coordenadas mínimas y máximas
+        const centerY = (-2.54034 + 0.6) / 2; // Centro aproximado en Y
+        modelRef.current.position.set(-4, centerY * 12, -6); // Ajustar posición en Y según escala
+
+        console.log('Modelo cargado:', gltf);
+      },
+      undefined,
+      (error) => console.error('Error loading 3D model:', error)
+    );
+
+    // Configurar iluminación
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(10, 10, 10); // Luz desde un ángulo más alto y distante
+    scene.add(light);
+    scene.add(new THREE.AmbientLight(0x404040));
+
+    // Posicionar la cámara para una vista frontal-elevada
+    camera.position.set(0, 0, 15); // Distancia de 15 unidades para capturar la altura
+    camera.lookAt(0, 0, 0); // Mirar al centro
+
+    const animate = () => {
+      requestAnimationFrame(animate);
+      if (modelRef.current) {
+        timeRef.current += 0.05;
+        const pitchAmplitude = 0.2; // Reducir amplitud para movimiento suave
+        const rollAmplitude = 0.2;
+        const speed = 0.06; // Reducir velocidad para animación más lenta
+        modelRef.current.rotation.x = Math.sin(timeRef.current * speed) * pitchAmplitude;
+        modelRef.current.rotation.z = Math.cos(timeRef.current * speed) * rollAmplitude;
+      }
+      renderer.render(scene, camera);
+    };
+    animate();
+
+    return () => {
+      if (mountRef.current && mountRef.current.contains(renderer.domElement)) {
+        mountRef.current.removeChild(renderer.domElement);
+      }
+      renderer.dispose();
+    };
+  }, []);
+
+  return <div ref={mountRef} style={{ width: '100%', height: '455px'}} />;
+};
+
+
+
+// SIN TEXTURAS //
+

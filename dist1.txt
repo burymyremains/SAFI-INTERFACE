@@ -1,0 +1,233 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { LineChart } from '@mui/x-charts/LineChart';
+import axios from 'axios';
+import Header from '../components/Header';
+import { Box, Grid, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography } from "@mui/material";
+import ReactPlayer from 'react-player';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import { Button } from '@mui/material';
+
+
+export default function SimpleLineChart() {
+  const [data, setData] = useState({
+    date: [],
+    time: [],
+    altitude: [],
+    temperature: [],
+    pressure: [],
+    velocity: [],
+    latitude: [],
+    longitude: [],
+    accel_x: [],
+    accel_y: [],
+    accel_z: [],
+    mission_state: [],
+    air_brake_angle: []
+  });
+  const [videoUrl, setVideoUrl] = useState('https://www.youtube.com/watch?v=PJxxfilLnGI');
+  const [imageUrl, setImageUrl] = useState('src/assets/standby.jpg'); // Ruta a la imagen en tu proyecto
+  const [isVideo, setIsVideo] = useState(true); // Variable de estado para alternar entre video e imagen
+  const [coordinates, setCoordinates] = useState([0, 0]);
+  const [isFetching, setIsFetching] = useState(false);
+
+  const missionStates = [
+    'prevuelo', 'despegue', 'frenos de aire', 'apogeo', 'paracaidas arrastre', 'paracaidas principal', 'aterrizaje'
+  ];
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (isFetching) return; // Si ya estamos buscando datos, no hagas nada
+      setIsFetching(true); // Indica que estamos buscando datos
+
+      try {
+        const response = await axios.get("http://localhost:3000/api/data");
+        const newData = response.data.slice(-30);
+        const date = newData.map(dataObj => dataObj.date);
+        const time = newData.map(dataObj => dataObj.time);
+        const altitude = newData.map(dataObj => dataObj.altitude);
+        const temperature = newData.map(dataObj => dataObj.temperature);
+        const pressure = newData.map(dataObj => dataObj.pressure);
+        const velocity = newData.map(dataObj => dataObj.velocity);
+        const latitude = newData.map(dataObj => dataObj.latitude);
+        const longitude = newData.map(dataObj => dataObj.longitude);
+        const accel_x = newData.map(dataObj => dataObj.accel_x);
+        const accel_y = newData.map(dataObj => dataObj.accel_y);
+        const accel_z = newData.map(dataObj => dataObj.accel_z);
+        const mission_state = newData.map(dataObj => dataObj.mission_state);
+        const air_brake_angle = newData.map(dataObj => dataObj.air_brake_angle);
+
+        setData({
+          date, time, altitude, temperature, pressure, velocity,
+          latitude, longitude, accel_x, accel_y, accel_z, mission_state, air_brake_angle
+        });
+
+        setCoordinates([latitude[latitude.length - 1], longitude[longitude.length - 1]]);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+
+      setIsFetching(false); // Indica que hemos terminado de buscar datos
+    };
+
+    fetchData();
+
+    const interval = setInterval(fetchData, 1000);
+
+    return () => clearInterval(interval);
+  }, [isFetching]);
+
+  const MapUpdater = ({ coordinates }) => {
+    const map = useMap();
+    useEffect(() => {
+      map.setView(coordinates, map.getZoom());
+    }, [coordinates, map]);
+    return null;
+  };
+
+  const getMaxValue = (array) => {
+    return array.length > 0 ? Math.max(...array) : 0;
+  };
+
+  return (
+    <Box m="0px">
+      <Header title="AKBAL-II LIVE TELEMETRY / POTROROCKETS SAFI-UAEMéx" />
+      <Button onClick={() => setIsVideo(!isVideo)} variant="contained" color="primary">
+        {isVideo ? "Mostrar Imagen" : "Mostrar Video"}
+      </Button>
+      <Grid container spacing={8} alignItems="stretch">
+        <Grid item xs={3}>
+          <MapContainer center={coordinates} zoom={22} style={{ height: "400px", width: "100%" }}>
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            />
+            <Marker position={coordinates}>
+              <Popup>
+                Coordenadas actuales: {coordinates[0]}, {coordinates[1]}
+              </Popup>
+            </Marker>
+            <MapUpdater coordinates={coordinates} />
+          </MapContainer>
+        </Grid>
+        <Grid item xs={5}>
+          {isVideo ? (
+            <ReactPlayer
+              url={videoUrl}
+              playing
+              controls
+              width='100%'
+              height='400px'
+            />
+          ) : (
+            <img
+              src={imageUrl}
+              alt="Live feed"
+              width='110%'
+              height='100px'
+              align='justifyContent'
+            />
+          )}
+        </Grid>
+        <Grid item xs={3}>
+          <TableContainer component={Paper}>
+            <Table aria-label="mission state table">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Fase de Misión</TableCell>
+                  <TableCell align="right">Estado</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {missionStates.map((state, index) => (
+                  <TableRow key={state} style={{
+                    backgroundColor: data.mission_state[data.mission_state.length - 1] === index ? '#f0f0f0' : 'white'
+                  }}>
+                    <TableCell component="th" scope="row">
+                      {state}
+                    </TableCell>
+                    <TableCell align="right">
+                      {data.mission_state[data.mission_state.length - 1] === index ? 'Activo' : 'Inactivo'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Grid>
+      </Grid>
+      <Grid container spacing={3} alignItems="stretch">
+        <Grid item xs={2}>
+          <LineChart
+            title='ALT'
+            width={300}
+            height={400}
+            series={[
+              { data: data.altitude, label: `Altitud Máxima: ${getMaxValue(data.altitude)}`, style: { fontSize: '18px', fontWeight: 'bold' } },
+            ]}
+            xAxis={[{ scaleType: 'point', data: data.time, axisLabelStyles: { fontSize: 12 } }]}
+            yAxis={[{ axisLabelStyles: { fontSize: 12 } }]}
+            grid={{ vertical: true, horizontal: true }}
+          />
+        </Grid>
+        <Grid item xs={2}>
+          <LineChart
+            title='TEMP'
+            width={300}
+            height={400}
+            series={[
+              { data: data.temperature, label: `Temperatura Máxima: ${getMaxValue(data.temperature)}`, style: { fontSize: '18px', fontWeight: 'bold' } },
+            ]}
+            xAxis={[{ scaleType: 'point', data: data.time, axisLabelStyles: { fontSize: 12 } }]}
+            yAxis={[{ axisLabelStyles: { fontSize: 12 } }]}
+            grid={{ vertical: true, horizontal: true }}
+          />
+        </Grid>
+        <Grid item xs={2}>
+          <LineChart
+            title='PRESS'
+            width={300}
+            height={400}
+            series={[
+              { data: data.pressure, label: `Presión Máxima: ${getMaxValue(data.pressure)}`, style: { fontSize: '18px', fontWeight: 'bold' } },
+            ]}
+            xAxis={[{ scaleType: 'point', data: data.time, axisLabelStyles: { fontSize: 12 } }]}
+            yAxis={[{ axisLabelStyles: { fontSize: 12 } }]}
+            grid={{ vertical: true, horizontal: true }}
+          />
+        </Grid>
+        <Grid item xs={2}>
+          <LineChart
+            title='VEL'
+            width={300}
+            height={400}
+            series={[
+              { data: data.velocity, label: `Velocidad Máxima: ${getMaxValue(data.velocity)}`, style: { fontSize: '18px', fontWeight: 'bold' } },
+            ]}
+            xAxis={[{ scaleType: 'point', data: data.time, axisLabelStyles: { fontSize: 12 } }]}
+            yAxis={[{ axisLabelStyles: { fontSize: 12 } }]}
+            grid={{ vertical: true, horizontal: true }}
+          />
+        </Grid>
+        <Grid item xs={3}>
+          <Typography variant="h4">
+            Últimos valores:
+          </Typography>
+          <Typography variant="h3">
+            Latitud: {data.latitude[data.latitude.length - 1]}
+          </Typography>
+          <Typography variant="h3">
+            Longitud: {data.longitude[data.longitude.length - 1]}
+          </Typography>
+          <Typography variant="h3">
+            Velocidad: {data.velocity[data.velocity.length - 1]}
+          </Typography>
+          <Typography variant="h3">
+            CONOPS: {data.mission_state[data.mission_state.length - 1]}
+          </Typography>
+        </Grid>
+      </Grid>
+    </Box>
+  );
+  
+}

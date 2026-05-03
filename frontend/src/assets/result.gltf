@@ -1,0 +1,166 @@
+{
+    "asset": {
+        "version": "2.0",
+        "generator": "Open Asset Import Library (assimp v5.2.cf7d3637)"
+    },
+    "extensionsUsed": [
+        "KHR_materials_volume",
+        "KHR_materials_ior",
+        "FB_ngon_encoding"
+    ],
+    "accessors": [
+        {
+            "bufferView": 0,
+            "byteOffset": 0,
+            "componentType": 5126,
+            "count": 53568,
+            "type": "VEC3",
+            "max": [
+                8.488499641418457,
+                8.748900413513184,
+                22.887800216674806
+            ],
+            "min": [
+                -8.686300277709961,
+                -8.42590045928955,
+                -24.396699905395509
+            ]
+        },
+        {
+            "bufferView": 1,
+            "byteOffset": 0,
+            "componentType": 5126,
+            "count": 53568,
+            "type": "VEC3",
+            "max": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "min": [
+                -1.0,
+                -1.0,
+                -1.0
+            ]
+        },
+        {
+            "bufferView": 2,
+            "byteOffset": 0,
+            "componentType": 5126,
+            "count": 53568,
+            "type": "VEC2",
+            "max": [
+                0.9896000027656555,
+                0.9929999709129334
+            ],
+            "min": [
+                0.08640000224113465,
+                0.004199981689453125
+            ]
+        },
+        {
+            "bufferView": 3,
+            "byteOffset": 0,
+            "componentType": 5125,
+            "count": 53568,
+            "type": "SCALAR",
+            "max": [
+                53567
+            ],
+            "min": [
+                0
+            ]
+        }
+    ],
+    "buffers": [
+        {
+            "byteLength": 1928448,
+            "uri": "result.bin"
+        }
+    ],
+    "bufferViews": [
+        {
+            "buffer": 0,
+            "byteOffset": 0,
+            "byteLength": 642816,
+            "target": 34962
+        },
+        {
+            "buffer": 0,
+            "byteOffset": 642816,
+            "byteLength": 642816,
+            "target": 34962
+        },
+        {
+            "buffer": 0,
+            "byteOffset": 1285632,
+            "byteLength": 428544,
+            "target": 34962
+        },
+        {
+            "buffer": 0,
+            "byteOffset": 1714176,
+            "byteLength": 214272,
+            "target": 34963
+        }
+    ],
+    "materials": [
+        {
+            "name": "DefaultMaterial",
+            "pbrMetallicRoughness": {
+                "baseColorFactor": [
+                    0.6000000238418579,
+                    0.6000000238418579,
+                    0.6000000238418579,
+                    1.0
+                ],
+                "metallicFactor": 0.0
+            },
+            "extensions": {
+                "KHR_materials_ior": {
+                    "ior": 1.0
+                }
+            }
+        }
+    ],
+    "meshes": [
+        {
+            "name": "18499_Model_Rocket_with_Narrow_Top",
+            "primitives": [
+                {
+                    "extensions": {
+                        "FB_ngon_encoding": {}
+                    },
+                    "mode": 4,
+                    "material": 0,
+                    "indices": 3,
+                    "attributes": {
+                        "POSITION": 0,
+                        "NORMAL": 1,
+                        "TEXCOORD_0": 2
+                    }
+                }
+            ]
+        }
+    ],
+    "nodes": [
+        {
+            "name": "18499_Model_Rocket_with_Narrow_Top_v1_NEW.obj",
+            "children": [
+                1
+            ]
+        },
+        {
+            "name": "18499_Model_Rocket_with_Narrow_Top",
+            "mesh": 0
+        }
+    ],
+    "scenes": [
+        {
+            "nodes": [
+                0
+            ]
+        }
+    ],
+    "scene": 0
+}
