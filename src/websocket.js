@@ -103,10 +103,10 @@ export function initWebSocket(server) {
     getLast: (rows) => JSON.stringify(rows),
   }), 5000);
 
-  setInterval(() => emitIfNew({
-    query: "SELECT * FROM datos_laniakea ORDER BY date DESC, time DESC LIMIT 100",
-    channel: "laniakea",
-    getLast: (rows) => JSON.stringify(rows),
-  }), 200);
+    setInterval(() => emitIfNew({
+        query: "SELECT * FROM datos_laniakea ORDER BY id DESC LIMIT 100",
+        channel: "laniakea",
+        getLast: (rows) => rows[0]?.id,
+    }), 200);
   
 }

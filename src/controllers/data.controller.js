@@ -184,57 +184,38 @@ export const postData = async (req, res, next) => {
 
 export const postLaniakeaData = async (req, res, next) => {
     const {
-        timestamp,
         latitud,
         longitud,
-        aceleracion,
-        accel_x,
-        accel_y,
-        accel_z,
         altitud,
+        aceleracion,
+        accel_x, accel_y, accel_z,
         conops,
         voltaje,
         corriente
     } = req.body;
 
-    // Validar que los parámetros obligatorios estén presentes
-    if (
-        !timestamp ||
-        latitud === undefined || longitud === undefined ||
-        aceleracion === undefined ||
-        accel_x === undefined || accel_y === undefined || accel_z === undefined ||
-        altitud === undefined
-    ) {
-        return res.status(400).json({ message: 'Faltan parámetros obligatorios en la solicitud.' });
+    // Validación simplificada
+    if (latitud === undefined || longitud === undefined || altitud === undefined) {
+        return res.status(400).json({ message: 'Faltan coordenadas o altitud.' });
     }
 
     try {
-        // Extraer la fecha y la hora del timestamp
-        const date = new Date(timestamp).toISOString().split('T')[0]; // YYYY-MM-DD
-        const time = new Date(timestamp).toISOString().split('T')[1].split('.')[0]; // HH:MM:SS
-
-        // Insertar los datos en la tabla datos_laniakea
         const result = await pool.query(
             `INSERT INTO datos_laniakea 
-                (date, time, latitud, longitud, aceleracion, accel_x, accel_y, accel_z, altitud, conops, voltaje, corriente) 
+                (latitud, longitud, aceleracion, accel_x, accel_y, accel_z, altitud, conops, voltaje, corriente, timestamp) 
              VALUES 
-                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_TIMESTAMP)
              RETURNING *`,
-            [date, time, latitud, longitud, aceleracion, accel_x, accel_y, accel_z, altitud, conops, voltaje, corriente]
+            [latitud, longitud, aceleracion, accel_x, accel_y, accel_z, altitud, conops, voltaje, corriente]
         );
 
-        return res.status(201).json({
-            message: 'Datos insertados correctamente en datos_laniakea.',
-            data: result.rows[0]
-        });
+        return res.status(201).json(result.rows[0]);
 
     } catch (error) {
-        console.error('Error al insertar los datos en datos_laniakea:', error);
-        return res.status(500).json({ message: 'Error al insertar los datos en la base de datos.' });
+        console.error('Error en datos_laniakea:', error);
+        return res.status(500).json({ message: 'Error en la base de datos.' });
     }
 };
-
-
 
 export const postXitzin2Data = async (req, res, next) => {
     const {

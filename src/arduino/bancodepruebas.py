@@ -81,3 +81,6 @@ while True:
 
         except Exception as e:
             print(f"Error al procesar los datos: {e}")
+
+
+#puro empuje
