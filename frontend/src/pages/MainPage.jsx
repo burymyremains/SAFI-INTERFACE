@@ -9,8 +9,8 @@ export default function MainPage() {
     const buttons = [
         { label: "Banco de Pruebas", route: "/bancodepruebas", icon: <Speed /> },
         { label: "Live Telemetry (XITZIN-II)", route: "/line", icon: <RocketLaunch /> },
-        { label: "Live View (XITZIN-II)", route: "/dashboard", icon: <RocketLaunch /> },
-        { label: "Live Telemetry (XITZIN-II)", route: "/xitzin2data", icon: <RocketLaunch /> },
+        { label: "Live View (XITZIN-II)", route: "/dashboard", icon: <RocketLaunch /> }, //bug
+        { label: "Live Telemetry (XITZIN-II)", route: "/xitzin2data", icon: <RocketLaunch /> }, //bug
         { label: "Filamentadora", route: "/filamentadora", icon: <RocketLaunch /> },
         { label: "Filamentadora 2", route: "/filamentadora2", icon: <RocketLaunch /> },
         { label: "Filamentadora 3", route: "/filamentadora3", icon: <RocketLaunch /> },

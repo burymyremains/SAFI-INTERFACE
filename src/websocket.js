@@ -23,8 +23,7 @@ export function initWebSocket(server) {
     (async () => {
       const data = await pool.query("SELECT * FROM data ORDER BY date DESC, time DESC LIMIT 150");
       const banco = await pool.query("SELECT * FROM prueba_estatica_0 ORDER BY id DESC LIMIT 100");
-      const laniakea = await pool.query ("SELECT * FROM datos_laniakea ORDER BY date DESC, time DESC LIMIT 100");
-      const x2data = await pool.query("SELECT * FROM xitzin_2_data");
+      const laniakea = await pool.query("SELECT * FROM datos_laniakea ORDER BY timestamp DESC LIMIT 100");      const x2data = await pool.query("SELECT * FROM xitzin_2_data");
       const bats = await pool.query("SELECT * FROM battery_status");
       const x2bats = await pool.query("SELECT * FROM xitzin_2_batteries");
 
@@ -42,12 +41,11 @@ export function initWebSocket(server) {
       lastTimestamps["xitzin2-datos"] = JSON.stringify(x2data.rows[0]);
       lastTimestamps["baterias"] = JSON.stringify(bats.rows);
       lastTimestamps["xitzin2-baterias"] = JSON.stringify(x2bats.rows);
-      lastTimestamps["laniakea"] = `${laniakea.rows[0]?.date}-${laniakea.rows[0]?.time}`;
-    })().catch(console.error);
+      lastTimestamps["laniakea"] = laniakea.rows[0] ? laniakea.rows[0].id : null;  })().catch(console.error);
 
     socket.on("ignicion", ({ command }) => {
       if (command === "IGNICION") {
-        ignicionState = true;
+        ignicionState = true;+
         io.emit("ignicion-estado", { command: "IGNICION" });
         setTimeout(() => {
           ignicionState = false;
@@ -61,17 +59,29 @@ export function initWebSocket(server) {
     });
   });
 
-  // 🔁 Emisión controlada solo si cambia la última marca temporal
-  const emitIfNew = async ({ query, channel, getLast }) => {
-    const { rows } = await pool.query(query);
-    if (rows.length === 0) return;
+  // Emisión controlada solo si cambia la última marca temporal
+    const emitIfNew = async ({ query, channel, getLast }) => {
+        try {
+            const { rows } = await pool.query(query);
 
-    const newTimestamp = getLast(rows);
-    if (newTimestamp !== lastTimestamps[channel]) {
-      io.emit(channel, rows);
-      lastTimestamps[channel] = newTimestamp;
-    }
-  };
+            // Si la tabla está vacía, mandamos un arreglo vacío al front para que no se quede colgado, pero no rompemos el servidor
+            if (rows.length === 0) {
+                if (lastTimestamps[channel] !== null) {
+                    io.emit(channel, []);
+                    lastTimestamps[channel] = null;
+                }
+                return;
+            }
+
+            const newTimestamp = getLast(rows);
+            if (newTimestamp !== lastTimestamps[channel]) {
+                io.emit(channel, rows);
+                lastTimestamps[channel] = newTimestamp;
+            }
+        } catch (err) {
+            console.error(`Error en el canal ${channel}:`, err);
+        }
+    };
 
   setInterval(() => emitIfNew({
     query: "SELECT * FROM data ORDER BY date DESC, time DESC LIMIT 150",
@@ -104,9 +114,9 @@ export function initWebSocket(server) {
   }), 5000);
 
     setInterval(() => emitIfNew({
-        query: "SELECT * FROM datos_laniakea ORDER BY id DESC LIMIT 100",
+        query: "SELECT * FROM datos_laniakea ORDER BY timestamp DESC LIMIT 100",
         channel: "laniakea",
         getLast: (rows) => rows[0]?.id,
     }), 200);
-  
+
 }

@@ -56,7 +56,7 @@ function App() {
                                     <Route path="/" element={<HomePage />} />
                                     <Route path="/about" element={<AboutPage />} />
                                     <Route path="/login" element={<LoginPage />} />
-                                    <Route path="/signup" element={<RegisterPage />} /> {/* <-- AHORA ES PÚBLICA */}
+                                    <Route path="/signup" element={<RegisterPage />} />
                                 </Route>
 
                                 {/* RUTAS PROTEGIDAS */}
