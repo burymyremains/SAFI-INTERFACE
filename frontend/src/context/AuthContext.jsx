@@ -20,6 +20,20 @@ export function AuthProvider({ children }) {
   const [errors, setErrors] = useState(null);
   const [loading, setLoading] = useState(true);
 
+    //Revisa la sesión al recargar:
+    const checkLogin = async () => {
+        try {
+            const res = await verifyTokenRequest();
+            if (res.data) {
+                setIsAuth(true);
+                setUser(res.data);
+                setLoading(false);
+            }
+        } catch (error) {
+            setIsAuth(false);
+            setLoading(false);
+        }
+    };
 
   const setRoles = (level) => {
     if (level === 1) {
@@ -76,25 +90,33 @@ export function AuthProvider({ children }) {
     setIsGuard(false);
   };
 
-  useEffect(() => {
-    setLoading(true);
-    if (Cookie.get("token")) {
-      axios
-        .get("/profile")
-        .then((res) => {
-          setUser(res.data);
-          setRoles(res.data.level);
-          setIsAuth(true);
-        })
-        .catch((err) => {
-          setUser(null);
-          setIsAuth(false);
-          setIsAdmin(false);
-          setIsGuard(false);
-        });
-    }
-    setLoading(false);
-  }, []);
+    useEffect(() => {
+        const verifySession = async () => {
+            const token = Cookie.get("token");
+
+            if (!token) {
+                setIsAuth(false);
+                setLoading(false);
+                return;
+            }
+
+            try {
+                const res = await axios.get("/profile");
+                setUser(res.data);
+                setRoles(res.data.level);
+                setIsAuth(true);
+            } catch (error) {
+                setUser(null);
+                setIsAuth(false);
+                setIsAdmin(false);
+                setIsGuard(false);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        verifySession();
+    }, []);
 
   useEffect(() => {
     const clean = setTimeout(() => {
@@ -120,4 +142,6 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   );
+
+
 }

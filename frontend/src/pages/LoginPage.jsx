@@ -1,61 +1,75 @@
 import { Card, Input, Button, Label, Container } from "../components/ui";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useAuth } from "../context/AuthContext";
+import { useEffect } from "react";
 
 function LoginPage() {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm();
-  const { signin, errors: loginErrors } = useAuth();
-  const navigate = useNavigate();
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+    } = useForm();
 
-  const onSubmit = handleSubmit(async (data) => {
-    const user = await signin(data);
+    const { signin, isAuth, errors: loginErrors } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
 
-    if (user) navigate("/main");
-  });
+    const from = location.state?.from?.pathname || "/main";
 
-  return (
-    <Container className="h-[calc(100vh-10rem)] flex justify-center items-center">
-      <Card>
-        {loginErrors &&
-          loginErrors.map((err) => (
-            <p className="bg-red-500 text-white p-2 text-center">{err}</p>
-          ))}
+    const onSubmit = handleSubmit(async (data) => {
+        const user = await signin(data);
+        if (user) {
+            navigate(from, { replace: true });
+        }
+    });
 
-        <h1 className="text-4xl font-bold my-2 text-center">Log in</h1>
+    useEffect(() => {
+        if (isAuth && location.pathname === "/login") {
+            navigate(from, { replace: true });
+        }
+    }, [isAuth, navigate, from, location.pathname]);
 
-        <form onSubmit={onSubmit}>
-          <Label htmlFor="email">Email</Label>
-          <Input
-            type="email"
-            placeholder="Email"
-            {...register("email", {
-              required: true,
-            })}
-          />
-          {errors.email && <p className="text-red-500">Email is required</p>}
+    return (
+        <Container className="h-[calc(100vh-10rem)] flex justify-center items-center">
+            <Card>
+                {loginErrors &&
+                    loginErrors.map((err, idx) => (
+                        <p key={idx} className="bg-red-500 text-white p-2 text-center">{err}</p>
+                    ))}
 
-          <Label htmlFor="password">Password</Label>
-          <Input
-            type="password"
-            placeholder="Password"
-            {...register("password", {
-              required: true,
-            })}
-          />
-          {errors.password && (
-            <p className="text-red-500">Password is required</p>
-          )}
+                <h1 className="text-4xl font-bold my-2 text-center">Log in</h1>
 
-          <Button>Log in</Button>
-        </form>
-      </Card>
-    </Container>
-  );
+                <form onSubmit={onSubmit}>
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                        type="email"
+                        placeholder="Email"
+                        {...register("email", {
+                            required: true,
+                        })}
+                    />
+                    {errors.email && <p className="text-red-500">Email is required</p>}
+
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                        type="password"
+                        placeholder="Password"
+                        {...register("password", {
+                            required: true,
+                        })}
+                    />
+                    {errors.password && (
+                        <p className="text-red-500">Password is required</p>
+                    )}
+
+                    <div className="contenedor-flex">
+                        <Button>Log in</Button>
+                    </div>
+                </form>
+            </Card>
+        </Container>
+    );
 }
 
 export default LoginPage;

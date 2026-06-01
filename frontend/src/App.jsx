@@ -16,7 +16,6 @@ import TeamPage from "./pages/TeamPage"
 import HomePage from "./pages/HomePage";
 import AboutPage from "./pages/AboutPage";
 import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
 import RegisterFormPage from "./pages/RegisterFormPage";
 import ProfilePage from "./pages/ProfilePage";
 import NotFound from "./pages/NotFound";
@@ -31,13 +30,29 @@ import Filamentadora2 from "./pages/Filamentadora2";
 import Filamentadora3 from "./pages/Filamentadora3";
 import LogPage from "./pages/LogPage";
 import MainPage from "./pages/MainPage";
+import AkbalDashboard from "./pages/Akbal2.jsx";
 
 function App() {
   const { isAuth, loading } = useAuth();
   const [theme, colorMode] = useMode();
   const [isSidebar, setIsSidebar] = useState(true);
 
-    if (loading) return <h1>Cargando...</h1>;
+    if (loading) {
+        return (
+            <div style={{
+                backgroundColor: '#0A192F',
+                height: '100vh',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                color: '#61DAFB',
+                fontFamily: 'monospace',
+                fontSize: '24px'
+            }}>
+                Cargando...
+            </div>
+        );
+    }
 
     return (
         <ColorModeContext.Provider value={colorMode}>
@@ -51,12 +66,10 @@ function App() {
                             <Routes>
                                 {/* RUTAS PÚBLICAS  */}
                                 <Route
-                                    element={<ProtectedRoute isAllowed={!isAuth} redirectTo="/dashboard" />}
-                                >
+                                    element={<ProtectedRoute isAllowed={!isAuth} redirectTo="/main" />}>                                >
                                     <Route path="/" element={<HomePage />} />
                                     <Route path="/about" element={<AboutPage />} />
                                     <Route path="/login" element={<LoginPage />} />
-                                    <Route path="/signup" element={<RegisterPage />} />
                                 </Route>
 
                                 {/* RUTAS PROTEGIDAS */}
@@ -89,6 +102,7 @@ function App() {
                                         <Route path="/filamentadora3" element={<Filamentadora3 />} />
                                         <Route path="/laniakea" element={<Laniakea />} />
                                         <Route path="/hybridoperations" element={<HybridOperations />} />
+                                        <Route path="/akbal2" element={<AkbalDashboard />} />
                                     </Route>
 
                                     <Route path="/profile" element={<ProfilePage />} />
